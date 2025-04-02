@@ -38,7 +38,8 @@ public:
 
     void addPurchase(const Purchase& purchase);
     QVector<Purchase> getPurchaseOnDate(const Date& date) const;
-
+    QVector<Purchase> getPurchaseOnYear(int year) const;
+    QVector<Purchase> getAllPurchases() const;
     QString toString() const;
 
 private:

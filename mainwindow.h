@@ -26,6 +26,11 @@ private slots:
     void onUploadFileClicked();
     void generateReport();
 
+    void onItemsSoldReport();
+    void onAllPurchaseReport();
+    void onTotalPurchaseReport();
+
+
 private:
     Ui::MainWindow *ui;
     MemberManager memberManager;

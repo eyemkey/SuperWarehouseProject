@@ -66,6 +66,10 @@ bool Date::operator==(const Date& other) const {
     return (day == other.day && month == other.month && year == other.year);
 }
 
+bool Date::operator!=(const Date& other) const {
+    return !(*this == other);
+}
+
 bool Date::operator<(const Date& other) const {
     if (year != other.year) return year < other.year;
     if (month != other.month) return month < other.month;
@@ -74,6 +78,14 @@ bool Date::operator<(const Date& other) const {
 
 bool Date::operator>(const Date& other) const {
     return other < *this;
+}
+
+bool Date::operator<=(const Date& other) const {
+    return !(*this > other);
+}
+
+bool Date::operator>=(const Date& other) const {
+    return !(*this < other);
 }
 
 Date Date::parseDateStringToDate(const QString& dateStr) {

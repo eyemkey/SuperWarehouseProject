@@ -24,8 +24,11 @@ public:
     bool isValidDate() const;
 
     bool operator==(const Date& other) const;
+    bool operator!=(const Date& other) const;
     bool operator<(const Date& other) const;
     bool operator>(const Date& other) const;
+    bool operator>= (const Date& other) const;
+    bool operator<= (const Date& other) const;
 
     static Date parseDateStringToDate(const QString& dateStr);
 private:

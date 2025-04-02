@@ -4,22 +4,36 @@
 #include <QString>
 #include "date.h"
 
+struct Item{
+    QString name;
+    double price;
+
+    Item(const QString& name = "", double price = 0) : name(name), price(price)
+    {}
+
+    bool operator<(const Item& other) const{
+        return name < other.name;
+    }
+};
+
+
+
 class Purchase
 {
 public:
-    Purchase(QString item, int quantity, double price, Date date) :
-        item(item), quantity(quantity), price(price), date(date) {}
+    static QMap<Item, int> itemList;
 
-    QString getItem() const;
+    Purchase(Item item, int quantity, Date date) :
+        item(item), quantity(quantity), date(date) {}
+
+    Item getItem() const;
     int getQuantity() const;
-    double getPrice() const;
     Date getDate() const;
     double getTotalPrice() const;
 
 private:
-    QString item;
+    Item item;
     int quantity;
-    double price;
     Date date;
 };
 

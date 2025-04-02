@@ -22,8 +22,9 @@ public:
     void calculateRebates();
     void displayRebates(QWidget *parent);
 
-    // void generateYearReport(int year) const;
+    void generateYearReport(int year) const;
     void generateDailyReport(const Date& date) const;
+    void generateTotalPurchaseReport() const;
 
 private:
     QMap<int, Member> members;  // Use QMap for quick lookups by ID

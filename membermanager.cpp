@@ -5,6 +5,7 @@
 #include <iostream>
 #include <QDir>
 #include <QCoreApplication>
+#include <tuple>
 
 void MemberManager::addMember(const Member &member) {
     members[member.getId()] = member;
@@ -36,8 +37,8 @@ void MemberManager::saveToFile(const QString &filename) {
     out << "Name, ID, Type, Expiry Date, Total Spent\n";
 
     for (const Member &m : members) {
-        out << m.getName() << "," << m.getId() << "," << m.getTypeAsString() << ","
-            << m.getExpiryDate() << "," << m.getTotalSpent() << "\n";
+        out << m.getName() << ", " << m.getId() << ", " << m.getTypeAsString() << ", "
+            << m.getExpiryDate() << ", " << m.getTotalSpent() << "\n";
     }
     file.close();
 }
@@ -119,7 +120,7 @@ void MemberManager::processSalesFile(const QString &filename) {
         int quantity = priceQuantity[1].toInt();
 
         Date d = Date::parseDateStringToDate(date);
-        Purchase purchase(itemName, quantity, price, Date::parseDateStringToDate(date));
+        Purchase purchase(Item(itemName, price), quantity, Date::parseDateStringToDate(date));
         members[id].addPurchase(purchase);
     }
     file.close();
@@ -156,7 +157,7 @@ void MemberManager::displayRebates(QWidget *parent) {
 
 void MemberManager::generateDailyReport(const Date& date) const{
     int prefferedCount = 0, basicCount = 0;
-    QMap<QString, int> itemList;
+    QMap<Item, int> itemList;
     QVector<QString> customerNames;
     double totalRevenue = 0;
 
@@ -201,7 +202,7 @@ void MemberManager::generateDailyReport(const Date& date) const{
     for(auto item : itemList.keys()){
 
         out.setFieldWidth(30);
-        out<<item + " ";
+        out<<item.name + " ";
 
 
         out.setFieldWidth(5);
@@ -224,3 +225,154 @@ void MemberManager::generateDailyReport(const Date& date) const{
     out<<"Basic Customers: "<<basicCount<<"\n";
 
 }
+
+void MemberManager::generateYearReport(int year) const {
+    double totalRevenue = 0;
+    QMap<Item, int> itemList;
+    QPair<Item, int> bestSelling(Item(), 0);
+    QPair<Item, int> worstSelling(Item(), 0);
+
+    for(auto member : members){
+
+        QVector<Purchase> purchasesInYear = member.getPurchaseOnYear(year);
+
+        for(Purchase purchase : purchasesInYear){
+            itemList[purchase.getItem()] += purchase.getQuantity();
+
+            int currentItemQnt = itemList[purchase.getItem()];
+
+            if(currentItemQnt> bestSelling.second){
+                bestSelling.first = purchase.getItem();
+                bestSelling.second = currentItemQnt;
+            }
+
+            if(worstSelling.second == 0 ||
+                currentItemQnt < worstSelling.second)
+            {
+                worstSelling.first = purchase.getItem();
+                worstSelling.second = currentItemQnt;
+            }
+
+            totalRevenue += purchase.getTotalPrice();
+        }
+    }
+
+    //Display ItemList
+
+    for(const Item& item : itemList.keys()){
+        std::cout<<item.name.toStdString()<<" "<<itemList[item]<<std::endl;
+    }
+
+    QString projectRoot = QCoreApplication::applicationDirPath() + "/..";
+    QDir rootDir(projectRoot);
+    rootDir.cdUp();
+    rootDir.cdUp();
+
+    QDir reportsDir(rootDir.filePath("reports"));
+    if(!reportsDir.exists()){
+        reportsDir.mkpath(".");
+    }
+
+    QString filename = "YearlySalesReport-" + QString::number(year) +  ".txt";
+    QString fullPath = reportsDir.filePath(filename);
+
+    QFile file(fullPath);
+
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
+        return;
+    }
+
+    QTextStream out(&file);
+
+    for(auto it = itemList.constBegin(); it != itemList.constEnd(); ++it){
+        out << QString("%1 %2 \n\n")
+                .arg(it.key().name, -25)
+                .arg(it.value(), 10);
+    }
+
+    out<<"Total Revenue: "<<QString::number(totalRevenue) + "\n\n";
+
+    out<<"Best Selling Item: "<<bestSelling.first.name;
+    out<<" "<<QString::number(bestSelling.second)<<" count \n\n";
+
+    out<<"Worst Selling Item: "<<worstSelling.first.name;
+    out<<" "<<QString::number(worstSelling.second)<<" count \n\n";
+
+
+}
+
+void MemberManager::generateTotalPurchaseReport() const {
+
+    QString projectRoot = QCoreApplication::applicationDirPath() + "/..";
+    QDir rootDir(projectRoot);
+    rootDir.cdUp();
+    rootDir.cdUp();
+
+    QDir reportsDir(rootDir.filePath("reports"));
+    if(!reportsDir.exists()){
+        reportsDir.mkpath(".");
+    }
+
+    QString filename = "All Members - Total Purchase Report.txt";
+    QString fullPath = reportsDir.filePath(filename);
+
+    QFile file(fullPath);
+
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
+        return;
+    }
+
+    QTextStream out(&file);
+
+
+    double totalSpending = 0;
+    for(auto member: members){
+        out<<"-----------------------------------------------------------\n";
+        out<<QString("\nMember: %1 \nID: %2 \n")
+                   .arg(member.getName())
+                   .arg(member.getId());
+        QVector<Purchase> memberPurchases = member.getAllPurchases();
+        Date currentPurchaseDate;
+        double totalMemberSpending = 0;
+        for(auto purchase : memberPurchases){
+            if(purchase.getDate() != currentPurchaseDate){
+                currentPurchaseDate = purchase.getDate();
+
+                out<<"\n"<<currentPurchaseDate.toString()<<": \n";
+            }
+            totalMemberSpending += purchase.getTotalPrice();
+
+            out<<QString("  %1 %2 %3 \n")
+                       .arg(purchase.getItem().name, -25)
+                       .arg(purchase.getQuantity(), 10)
+                       .arg(purchase.getTotalPrice(), 10);
+        }
+        out<<QString("\nTotal Spending for %1: $%2 \n")
+                   .arg(member.getName())
+                   .arg(totalMemberSpending);
+        out<<"-----------------------------------------------------------\n";
+        totalSpending += totalMemberSpending;
+    }
+
+    out<<QString("\nGrand Total: $%1").arg(totalSpending);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

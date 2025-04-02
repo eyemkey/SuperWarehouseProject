@@ -188,7 +188,7 @@
      <rect>
       <x>280</x>
       <y>130</y>
-      <width>111</width>
+      <width>141</width>
       <height>31</height>
      </rect>
     </property>
@@ -278,6 +278,45 @@
      </rect>
     </property>
    </widget>
+   <widget class="QPushButton" name="itemsSoldReport">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>90</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Items Sold Report</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="allPurchaseReport">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>170</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>User's All Purchase Report</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="totalPurchaseReport">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>210</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Total Purchases by All Members</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -285,7 +324,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>17</height>
     </rect>
    </property>
   </widget>

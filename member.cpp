@@ -63,6 +63,8 @@ void Member::addPurchase(const Purchase& purchase) {
     purchases[date].push_back(purchase);
 
     totalSpent += purchase.getTotalPrice() * (1+SALES_TAX);
+
+    Purchase::itemList[purchase.getItem()] += purchase.getQuantity();
 }
 
 QVector<Purchase> Member::getPurchaseOnDate(const Date& date) const{
@@ -70,7 +72,38 @@ QVector<Purchase> Member::getPurchaseOnDate(const Date& date) const{
 }
 
 
-QString Member::toString() const {
+QVector<Purchase> Member::getPurchaseOnYear(int year) const {
+    Date startingDate(1, 1, year);
+    Date endingDate(31, 12, year);
+    QVector<Purchase> purchasesInYear;
+    for(const Date& date : purchases.keys()){
+        if(date >= startingDate && date <= endingDate){
+            for(auto e : purchases[date]){
+                purchasesInYear.push_back(e);
+            }
+        }
+    }
+    return purchasesInYear;
+}
+
+QVector<Purchase> Member::getAllPurchases() const {
+    QVector<Purchase> allPurchases;
+    for(auto it = purchases.constBegin(); it != purchases.constEnd(); ++it){
+        for(auto purchase : it.value()){
+            allPurchases.push_back(purchase);
+        }
+    }
+    return allPurchases;
+}
+
+QString Member::toString() const {/*
+    QString n = name.leftJustified(20, ' ');
+    QString id = QString(id).leftJustified(10, ' ');
+    QString type = getTypeAsString().leftJustified(12, ' ');
+    QString date = expiryDate.leftJustified(12, ' ');
+
+    return n + id + type + date + QString::number(getRebate());*/
+
     return QString("%1, %2, %3, %4, $%5, Rebate: $%6")
         .arg(name)
         .arg(id)
