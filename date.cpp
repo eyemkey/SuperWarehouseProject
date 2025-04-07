@@ -7,6 +7,10 @@ Date::Date() : day(1), month(1), year(2000) {}
 Date::Date(int day, int month, int year) :
     day(day), month(month), year(year) {}
 
+Date::Date(const QString& date){
+    Date(parseDateStringToDate(date));
+}
+
 
 int Date::getDay() const{
     return day;

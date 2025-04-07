@@ -29,11 +29,15 @@ private slots:
     void onItemsSoldReport();
     void onAllPurchaseReport();
     void onTotalPurchaseReport();
-
-
+    void membershipDueReport();
+    void onMembersUpgrade();
+    void onMembersDowngrade();
+    void onItemsUnitsSold();
 private:
     Ui::MainWindow *ui;
     MemberManager memberManager;
+
+    void setReportText(const QString& report);
 };
 
 #endif // MAINWINDOW_H

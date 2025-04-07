@@ -8,6 +8,9 @@
 #include "purchase.h"
 
 const double SALES_TAX = 0.0875;
+const double REBATE_RATE = 0.05;
+const double PREFERRED_PRICE = 75.00;
+const double BASIC_PRICE = 60.00;
 
 class Member {
 public:
@@ -18,20 +21,25 @@ public:
     Member(QString name,
            int id,
            MembershipType type,
-           QString expiryDate,
+           Date expiryDate,
            double totalSpent = 0.0);
 
     QString getName() const;
     int getId() const;
     MembershipType getType() const;
-    QString getExpiryDate() const;
+    QString getTypeAsString() const;
+    Date getExpiryDate() const;
+
+
     double getTotalSpent() const;
     double getRebate() const;
-    QString getTypeAsString() const;
+    double getSavings() const;
+    double getDues() const;
+
 
     // 🔹 Setters for updating member details
     void setName(const QString &newName);
-    void setExpiryDate(const QString &newExpiry);
+    void setExpiryDate(const Date &newExpiry);
     void setType(MembershipType newType);
     void setTotalSpent(double amount);
 
@@ -46,7 +54,7 @@ private:
     QString name;
     int id;
     MembershipType type;
-    QString expiryDate;
+    Date expiryDate;
     double totalSpent;
 
     QMap<Date, QVector<Purchase>> purchases;

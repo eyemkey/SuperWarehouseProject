@@ -5,13 +5,14 @@
 #include <QMap>
 #include <QFile>
 #include <QTextStream>
+#include <QVector>
 
 class MemberManager {
 public:
     void addMember(const Member &member);
     bool removeMember(int id);
     Member* searchMember(int id);
-    QList<Member> getAllMembers() const;
+    QVector<Member> getAllMembers() const;
 
     void saveToFile(const QString &filename);
     void loadFromFile(const QString &filename);
@@ -20,11 +21,15 @@ public:
     void loadShoppersFile(const QString &filename);
     void processSalesFile(const QString &filename);
     void calculateRebates();
-    void displayRebates(QWidget *parent);
+    // void displayRebates(QWidget *parent);
+    QString getRebates() const;
 
-    void generateYearReport(int year) const;
-    void generateDailyReport(const Date& date) const;
-    void generateTotalPurchaseReport() const;
+    QString generateYearReport(int year) const;
+    QString generateDailyReport(const Date& date) const;
+    QString generateTotalPurchaseReport() const;
+    QString generateYearyDuesReport() const;
+    QVector<Member> getMembersShouldUpgrade() const;
+    QVector<Member> getMembersShouldDowngrade() const;
 
 private:
     QMap<int, Member> members;  // Use QMap for quick lookups by ID

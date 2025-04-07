@@ -59,6 +59,22 @@ MainWindow::MainWindow(QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::onTotalPurchaseReport);
+    connect(ui->membershipDueReport,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::membershipDueReport);
+    connect(ui->membersUpgrade,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onMembersUpgrade);
+    connect(ui->membersDowngrade,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onMembersDowngrade);
+    connect(ui->itemUnitsSold,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onItemsUnitsSold);
 }
 MainWindow::~MainWindow()
 {
@@ -162,7 +178,9 @@ void MainWindow::updateMember()
 void MainWindow::calculateRebates()
 {
     memberManager.calculateRebates();
-    memberManager.displayRebates(this);
+    // memberManager.displayRebates(this);
+
+    setReportText(memberManager.getRebates());
 }
 
 void MainWindow::onUploadFileClicked() {
@@ -183,8 +201,9 @@ void MainWindow::generateReport(){
     QString month = ui->reportMonthInput->text();
     QString year = ui->reportYearInput->text();
 
+    QString report;
     if(day.isEmpty() || month.isEmpty()){
-        memberManager.generateYearReport(year.toInt());
+        report = memberManager.generateYearReport(year.toInt());
     }else{
         int d = day.toInt();
         int m = month.toInt();
@@ -193,8 +212,9 @@ void MainWindow::generateReport(){
 
         std::cout<<date.toString().toStdString()<<std::endl;
 
-        memberManager.generateDailyReport(date);
+        report = memberManager.generateDailyReport(date);
     }
+    ui->reportWindow->setPlainText(report);
 }
 
 
@@ -289,11 +309,75 @@ void MainWindow::onAllPurchaseReport(){
 
 
 void MainWindow::onTotalPurchaseReport(){
-    memberManager.generateTotalPurchaseReport();
+    QString report = memberManager.generateTotalPurchaseReport();
+    setReportText(report);
 }
 
 
+void MainWindow::membershipDueReport(){
+    QString report = memberManager.generateYearlyDuesReport();
+    setReportText(report);
+}
 
+
+void MainWindow::onMembersUpgrade() {
+    QVector<Member> upgradeMembers = memberManager.getMembersShouldUpgrade();
+
+    QString report = "";
+
+    for(auto member: upgradeMembers){
+        report += QString("%1 Possible Savings: %2\n")
+                      .arg(member.getName())
+                      .arg(member.getSavings());
+    }
+
+    if(upgradeMembers.isEmpty()){
+        report = "None";
+    }
+
+    setReportText(report);
+}
+
+void MainWindow::onMembersDowngrade() {
+    QVector<Member> downgradeMembers = memberManager.getMembersShouldDowngrade();
+
+    QString report = "";
+
+    for(auto member: downgradeMembers){
+        report += QString("%1 Possible Savings: %3\n")
+                      .arg(member.getName())
+                      .arg(-1 * member.getSavings());
+    }
+
+    if(downgradeMembers.isEmpty()){
+        report = "None";
+    }
+    setReportText(report);
+}
+
+void MainWindow::onItemsUnitsSold() {
+    QString itemName = ui->itemNameInput->text();
+
+    QString report = "";
+
+    for(auto item : Purchase::itemList.keys()){
+        if(item.name == itemName){
+            report += QString("Item: %1\n").arg(itemName);
+            report += QString("Units Sold: %1\n").arg(Purchase::itemList[item]);
+            report += QString("Total Revenue: %1\n").arg(Purchase::itemList[item] * item.price);
+        }
+    }
+
+    if(report.isEmpty()){
+        QMessageBox::warning(this,
+                             "Error", "Item Does Not Exist");
+    }
+    setReportText(report);
+}
+
+void MainWindow::setReportText(const QString& report){
+    ui->reportWindow->setPlainText(report);
+}
 
 
 

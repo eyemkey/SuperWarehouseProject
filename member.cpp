@@ -5,7 +5,7 @@
 Member::Member(QString name,
                int id,
                MembershipType type,
-               QString expiryDate,
+               Date expiryDate,
                double totalSpent):
         name(name),
         id(id),
@@ -21,7 +21,7 @@ int Member::getId() const {
     return id;
 }
 
-QString Member::getExpiryDate() const {
+Date Member::getExpiryDate() const {
     return expiryDate;
 }
 
@@ -37,16 +37,23 @@ QString Member::getTypeAsString() const {
     return (type == BASIC) ? "Basic" : "Preferred";
 }
 
-double Member::getRebate() const {
-    return (type == PREFERRED) ? totalSpent / (1+SALES_TAX) * 0.05 : 0.0;
+double Member::getDues() const {
+    return getType() == PREFERRED ? PREFERRED_PRICE : BASIC_PRICE;
 }
 
+double Member::getRebate() const {
+    return (type == PREFERRED) ? totalSpent / (1+SALES_TAX) * REBATE_RATE : 0.0;
+}
+
+double Member::getSavings() const {
+    return totalSpent / (1 + SALES_TAX) * REBATE_RATE - (PREFERRED_PRICE - BASIC_PRICE);
+}
 // 🔹 Setters for updating members
 void Member::setName(const QString &newName){
     name = newName;
 }
 
-void Member::setExpiryDate(const QString &newExpiry) {
+void Member::setExpiryDate(const Date &newExpiry) {
     expiryDate = newExpiry;
 }
 
@@ -108,7 +115,7 @@ QString Member::toString() const {/*
         .arg(name)
         .arg(id)
         .arg(getTypeAsString())
-        .arg(expiryDate)
+        .arg(expiryDate.toString())
         .arg(totalSpent)
         .arg(getRebate());
 }
