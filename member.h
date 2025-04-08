@@ -4,7 +4,7 @@
 #include <QString>
 #include <QMap>
 #include <QVector>
-#include "date.h"
+#include <QDate>
 #include "purchase.h"
 
 const double SALES_TAX = 0.0875;
@@ -21,14 +21,14 @@ public:
     Member(QString name,
            int id,
            MembershipType type,
-           Date expiryDate,
+           QDate expiryDate,
            double totalSpent = 0.0);
 
     QString getName() const;
     int getId() const;
     MembershipType getType() const;
     QString getTypeAsString() const;
-    Date getExpiryDate() const;
+    QDate getExpiryDate() const;
 
     bool isPreferred() const;
     double getTotalSpent() const;
@@ -38,14 +38,14 @@ public:
 
 
     // 🔹 Setters for updating member details
-    void setName(const QString &newName);
-    void setExpiryDate(const Date &newExpiry);
+    void setName(const QString& newName);
+    void setExpiryDate(const QDate& newExpiry);
     void setType(MembershipType newType);
     void setTotalSpent(double amount);
 
 
     void addPurchase(const Purchase& purchase);
-    QVector<Purchase> getPurchaseOnDate(const Date& date) const;
+    QVector<Purchase> getPurchaseOnDate(const QDate& date) const;
     QVector<Purchase> getPurchaseOnYear(int year) const;
     QVector<Purchase> getAllPurchases() const;
     QString toString() const;
@@ -54,10 +54,10 @@ private:
     QString name;
     int id;
     MembershipType type;
-    Date expiryDate;
+    QDate expiryDate;
     double totalSpent;
 
-    QMap<Date, QVector<Purchase>> purchases;
+    QMap<QDate, QVector<Purchase>> purchases;
 };
 
 #endif // MEMBER_H

@@ -16,12 +16,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    static QString GET_PROJECT_DIRECTORY();
+
 private slots:
     void addMember();
     void removeMember();
     void searchMember();
     void displayAllMembers();
-    void updateMember();
+    // void updateMember(); //!!Remove??
     void calculateRebates();  // 🔹 New function for rebates
     void onUploadFileClicked();
     void generateReport();
@@ -33,6 +35,7 @@ private slots:
     void onMembersUpgrade();
     void onMembersDowngrade();
     void onItemsUnitsSold();
+    void onGetExpiringMembers();
 
     void onMemberManagementButton();
     void onSalesReportButton();
@@ -43,8 +46,11 @@ private:
     Ui::MainWindow *ui;
     MemberManager memberManager;
 
+
+    bool restoreData();
     void changePage(int index);
     void setReportText(const QString& report);
+    QSet<Member::MembershipType> getIncludedTypesSet();
 };
 
 #endif // MAINWINDOW_H

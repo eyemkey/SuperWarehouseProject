@@ -1,11 +1,12 @@
 #include "membermanager.h"
-#include "date.h"
 #include <QMessageBox>
 #include <QDebug>
 #include <iostream>
 #include <QDir>
 #include <QCoreApplication>
 #include <tuple>
+
+QSet<QString> MemberManager::processedFiles;
 
 void MemberManager::addMember(const Member &member) {
     members[member.getId()] = member;
@@ -15,15 +16,25 @@ bool MemberManager::removeMember(int id) {
     return members.remove(id) > 0;
 }
 
-Member* MemberManager::searchMember(int id) {
+bool MemberManager::containsMember(int id){
+    return members.contains(id);
+}
+
+Member* MemberManager::searchMember(int id, QSet<Member::MembershipType> includedTypes) {
     if (members.contains(id)) {
-        return &members[id];
+        if(includedTypes.contains(members[id].getType())){
+            return &members[id];
+        }
     }
     return nullptr;
 }
 
-Member* MemberManager::searchMember(const QString& name) const {
+Member* MemberManager::searchMember(const QString& name, QSet<Member::MembershipType> includedTypes) const {
     for(auto member: members){
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
+
         if(member.getName() == name){
             return &member;
         }
@@ -31,8 +42,14 @@ Member* MemberManager::searchMember(const QString& name) const {
     return nullptr;
 }
 
-QVector<Member> MemberManager::getAllMembers() const {
-    return members.values();
+QVector<Member> MemberManager::getAllMembers(QSet<Member::MembershipType> includedTypes) const {
+    QVector<Member> allMembers;
+    for(auto member: members){
+        if(includedTypes.contains(member.getType())){
+            allMembers.push_back(member);
+        }
+    }
+    return allMembers;
 }
 
 void MemberManager::saveToFile(const QString &filename) {
@@ -74,7 +91,7 @@ void MemberManager::loadFromFile(const QString &filename) {
         QString expiryDate = parts[3];
         double spent = parts[4].toDouble();
 
-        members.insert(id, Member(name, id, type, expiryDate, spent));
+        members.insert(id, Member(name, id, type, QDate::fromString(expiryDate, "MM/dd/yyyy"), spent));
 
         // 🔹 Remove redundant initialization:
         // totalSpent[id] = 0.0;
@@ -85,14 +102,10 @@ void MemberManager::loadFromFile(const QString &filename) {
 
 
 // 🔹 Load warehouse shoppers data
-void MemberManager::loadShoppersFile(const QString &filename) {
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qDebug() << "Error: Cannot open shoppers file!";
-        return;
-    }
+void MemberManager::loadShoppersFile(QFile& file) {
 
     QTextStream in(&file);
+
     while (!in.atEnd()) {
         QString name = in.readLine();
         int id = in.readLine().toInt();
@@ -100,14 +113,26 @@ void MemberManager::loadShoppersFile(const QString &filename) {
         QString expiry = in.readLine();
 
         Member::MembershipType type = (typeStr == "Preferred") ? Member::PREFERRED : Member::BASIC;
-        members[id] = Member(name, id, type, expiry);
+        members[id] = Member(name, id, type, QDate::fromString(expiry, "MM/dd/yyyy"));
         totalSpent[id] = 0.0; // Initialize spending to 0
     }
-    file.close();
+
+}
+
+void MemberManager::loadShoppersFile(const QString& filename) {
+    QFile file(filename);
+
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        qDebug() << "Error: Cannot open file for reading!";
+        return;
+    }
+
+    loadShoppersFile(file);
 }
 
 // 🔹 Process purchases from day1.txt
 void MemberManager::processSalesFile(const QString &filename) {
+
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << "Error: Cannot open sales file!";
@@ -128,8 +153,8 @@ void MemberManager::processSalesFile(const QString &filename) {
         double price = priceQuantity[0].toDouble();
         int quantity = priceQuantity[1].toInt();
 
-        Date d = Date::parseDateStringToDate(date);
-        Purchase purchase(Item(itemName, price), quantity, Date::parseDateStringToDate(date));
+        QDate d = QDate::fromString(date, "MM/dd/yyyy");
+        Purchase purchase(Item(itemName, price), quantity, QDate::fromString(date, "MM/dd/yyyy"));
         members[id].addPurchase(purchase);
     }
     file.close();
@@ -179,13 +204,17 @@ QString MemberManager::getRebates() const{
     return result;
 }
 
-QString MemberManager::generateDailyReport(const Date& date) const{
+QString MemberManager::generateDailyReport(const QDate& date, QSet<Member::MembershipType> includedTypes) const{
     int prefferedCount = 0, basicCount = 0;
     QMap<Item, int> itemList;
     QVector<QString> customerNames;
     double totalRevenue = 0;
 
     for(auto member: members){
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
+
         QVector<Purchase> memberPurchase = member.getPurchaseOnDate(date);
         if(!memberPurchase.empty()){
             customerNames.push_back(member.getName());
@@ -221,13 +250,16 @@ QString MemberManager::generateDailyReport(const Date& date) const{
     return reportString;
 }
 
-QString MemberManager::generateYearReport(int year) const {
+QString MemberManager::generateYearReport(int year, QSet<Member::MembershipType> includedTypes) const {
     double totalRevenue = 0;
     QMap<Item, int> itemList;
     QPair<Item, int> bestSelling(Item(), 0);
     QPair<Item, int> worstSelling(Item(), 0);
     
     for(auto member : members){
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
 
         QVector<Purchase> purchasesInYear = member.getPurchaseOnYear(year);
 
@@ -280,12 +312,17 @@ QString MemberManager::generateYearReport(int year) const {
 
 }
 
-QString MemberManager::generateTotalPurchaseReport() const {
+QString MemberManager::generateTotalPurchaseReport(QSet<Member::MembershipType> includedTypes) const {
 
     QString reportText = "";
 
     double totalSpending = 0;
     for(auto member: members){
+
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
+
         reportText += "-----------------------------------------------------------\n";
         reportText += QString("\nMember: %1 \nID: %2 \n")
                           .arg(member.getName())
@@ -293,7 +330,7 @@ QString MemberManager::generateTotalPurchaseReport() const {
 
 
         QVector<Purchase> memberPurchases = member.getAllPurchases();
-        Date currentPurchaseDate;
+        QDate currentPurchaseDate;
         double totalMemberSpending = 0;
         for(auto purchase : memberPurchases){
             if(purchase.getDate() != currentPurchaseDate){
@@ -323,11 +360,15 @@ QString MemberManager::generateTotalPurchaseReport() const {
 
 
 
-QString MemberManager::generateYearlyDuesReport() const{
+QString MemberManager::generateYearlyDuesReport(QSet<Member::MembershipType> includedTypes) const{
     QVector<Member> preferredMembers;
     QVector<Member> basicMembers;
 
     for(auto member: members){
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
+
         if(member.getType() == Member::PREFERRED){
             preferredMembers.push_back(member);
         }else{
@@ -351,30 +392,39 @@ QString MemberManager::generateYearlyDuesReport() const{
 
     QString report = "";
 
-    report += "Basic Members: \n";
 
-    for(auto member : basicMembers){
-        report += QString("%1Dues: $%2\n")
-                      .arg(member.getName(), -30)
-                      .arg(member.getDues());
+    double basicMemberDues = !basicMembers.isEmpty() ? 0 :  basicMembers.size() * basicMembers[0].getDues();;
+    double preferredMemberDues = !preferredMembers.isEmpty() ? 0 : preferredMembers.size() * preferredMembers[0].getDues();;
+
+
+    if(includedTypes.contains(Member::BASIC)){
+        report += "Basic Members: \n";
+
+        for(auto member : basicMembers){
+            report += QString("%1Dues: $%2\n")
+            .arg(member.getName(), -30)
+                .arg(member.getDues());
+        }
+
+
+        report += QString("Total Dues from basic members: $%1\n\n")
+                      .arg(basicMemberDues);
     }
 
-    double basicMemberDues = basicMembers.size() * basicMembers[0].getDues();
-    report += QString("Total Dues from basic members: $%1\n\n")
-                  .arg(basicMemberDues);
+    if(includedTypes.contains(Member::PREFERRED)){
+        report += "Preferred members: \n";
+        for(auto member: preferredMembers){
+            report += QString("%1Dues: $%2\n")
+            .arg(member.getName(), -30)
+                .arg(member.getDues());
+        }
 
 
-    report += "Preferred members: \n";
-    for(auto member: preferredMembers){
-        report += QString("%1Dues: $%2\n")
-                      .arg(member.getName(), -30)
-                      .arg(member.getDues());
+        report += QString("Total Dues from preferred members: $%1\n\n")
+                      .arg(preferredMemberDues);
     }
 
-    double preferredMemberDues =
-        preferredMembers.size() * preferredMembers[0].getDues();;
-    report += QString("Total Dues from preferred members: $%1\n\n")
-                  .arg(preferredMemberDues);
+
 
     report += QString("Total Dues from all Members: $%1")
                   .arg(basicMemberDues + preferredMemberDues);
@@ -413,6 +463,23 @@ QVector<Member> MemberManager::getMembersShouldDowngrade() const{
     }
 
     return membersShouldDowngrade;
+}
+
+QVector<Member> MemberManager::getExpiringMembers(int month, int year, QSet<Member::MembershipType> includedTypes) const {
+    QVector<Member> expiringMembers;
+
+    for(auto member: members){
+        if(!includedTypes.contains(member.getType())){
+            continue;
+        }
+        if(member.getExpiryDate().month() == month
+            && member.getExpiryDate().year() == year)
+        {
+            expiringMembers.push_back(member);
+        }
+    }
+
+    return expiringMembers;
 }
 
 

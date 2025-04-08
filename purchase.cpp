@@ -11,7 +11,7 @@ int Purchase::getQuantity() const {
 }
 
 
-Date Purchase::getDate() const {
+QDate Purchase::getDate() const {
     return date;
 }
 

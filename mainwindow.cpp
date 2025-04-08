@@ -3,7 +3,16 @@
 #include <QMessageBox>
 #include <QDir>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <iostream>
+
+QString MainWindow::GET_PROJECT_DIRECTORY() {
+    QDir dir(QCoreApplication::applicationDirPath());
+    dir.cdUp();
+    dir.cdUp();
+    dir.cdUp();
+    return dir.absolutePath();
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -11,8 +20,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     // 🔹 Load warehouse shoppers and daily sales
-    memberManager.loadShoppersFile(":/data/static/warehouse shoppers.txt");
-    // memberManager.processSalesFile(":/data/static/day1.txt");
+    // memberManager.loadShoppersFile(":/data/static/warehouse shoppers.txt");
+
+    bool isDataRestored = restoreData();
+    std::cout<<isDataRestored<<std::endl;
 
     // 🔹 Ensure both buttons are properly connected
     connect(ui->addButton,
@@ -31,10 +42,10 @@ MainWindow::MainWindow(QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::displayAllMembers);
-    connect(ui->updateButton,
-            &QPushButton::clicked,
-            this,
-            &MainWindow::updateMember);
+    // connect(ui->updateButton,
+    //         &QPushButton::clicked,
+    //         this,
+    //         &MainWindow::updateMember);
     connect(ui->rebateButton,
             &QPushButton::clicked,
             this,
@@ -75,6 +86,11 @@ MainWindow::MainWindow(QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::onItemsUnitsSold);
+
+    connect(ui->expiringMembers,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onGetExpiringMembers);
 
     connect(ui->memberManagementButton,
             &QPushButton::clicked,
@@ -129,8 +145,8 @@ void MainWindow::onSalesReportButton(){
 }
 
 // 🔹 Add a new member
-void MainWindow::addMember()
-{
+void MainWindow::addMember() {
+
     QString name = ui->nameInput->text();
     int id = ui->idInput->text().toInt();
     QString expiry = ui->expiryInput->text();
@@ -138,13 +154,18 @@ void MainWindow::addMember()
     Member::MembershipType type =
             isPreferred ? Member::PREFERRED : Member::BASIC;
 
-    if (name.isEmpty() || id <= 0 || expiry.isEmpty()) {
+
+    QDate expiryDate = QDate::fromString(expiry, "MM/dd/yyyy");
+
+    if(!expiryDate.isValid()
+        || name.isEmpty() || id <= 0 || memberManager.containsMember(id)){
+
         QMessageBox::warning(this,
                              "Error", "Please enter valid member details.");
         return;
     }
 
-    memberManager.addMember(Member(name, id, type, expiry));
+    memberManager.addMember(Member(name, id, type, expiryDate));
     QMessageBox::information(this, "Success", "Member added successfully!");
 }
 
@@ -152,6 +173,7 @@ void MainWindow::addMember()
 void MainWindow::removeMember()
 {
     int id = ui->idInput->text().toInt();
+
     if (memberManager.removeMember(id)) {
         QMessageBox::information(this, "Success", "Member removed.");
     } else {
@@ -162,108 +184,180 @@ void MainWindow::removeMember()
 // 🔹 Search for a member by ID
 void MainWindow::searchMember()
 {
-    int id = ui->idInput->text().toInt();
-    Member *m = memberManager.searchMember(id);
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
 
-    if (m) {
-        QMessageBox::information(this, "Member Found", m->toString());
-    } else {
-        QMessageBox::warning(this, "Error", "Member not found.");
+    int id = ui->idInput->text().toInt();
+    QString name = ui->nameInput->text();
+
+    Member *m = memberManager.searchMember(id, includedTypes);
+
+    if(!m){
+        m = memberManager.searchMember(name, includedTypes);
+        if(!m){
+            QMessageBox::warning(this, "Error", "Member not found.");
+            return;
+        }
     }
+
+    QString report = QString(
+                         "Name: %1\n"
+                         "ID: %2\n"
+                         "Membership Type: %3\n"
+                         "Expiration Date: %4\n"
+                         "Total Spent: $%5\n"
+                         "Rebate Amount: $%6"
+                         ).arg(m->getName())
+                         .arg(m->getId())
+                         .arg(m->isPreferred() ? "Preferred" : "Basic")
+                         .arg(m->getExpiryDate().toString("MM/dd/yyyy"))
+                         .arg(m->getTotalSpent())
+                         .arg(m->getRebate());
+
+    setReportText(report);
+    QMessageBox::information(this, "Member Found", "Member Found");
 }
 
 // 🔹 Display all members
 void MainWindow::displayAllMembers()
 {
-    QVector<Member> members = memberManager.getAllMembers();
+
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
+
+    QVector<Member> members = memberManager.getAllMembers(includedTypes);
     QString list;
+
+    list += QString("%1%2%3%4%5%6\n\n")
+                .arg("Name", -25)
+                .arg("ID", -10)
+                .arg("Type", -12)
+                .arg("Expiry Date", -12)
+                .arg("Spent", -12)
+                .arg("Rebate", -10);
 
     for (const Member &m : members) {
         list += m.toString();
     }
 
-    // QMessageBox::information(this,
-    //                          "All Members",
-    //                          list.isEmpty() ? "No members found." : list);
-
     setReportText(list);
 }
 
 // 🔹 Update an existing member
-void MainWindow::updateMember()
-{
-    int id = ui->idInput->text().toInt();
-    Member *m = memberManager.searchMember(id);
+// void MainWindow::updateMember()
+// {
+//     int id = ui->idInput->text().toInt();
+//     Member *m = memberManager.searchMember(id);
 
-    if (!m) {
-        QMessageBox::warning(this, "Error", "Member not found!");
-        return;
-    }
+//     if (!m) {
+//         QMessageBox::warning(this, "Error", "Member not found!");
+//         return;
+//     }
 
-    // Get updated values
-    QString newName = ui->nameInput->text();
-    QString newExpiry = ui->expiryInput->text();
-    bool isPreferred = ui->typeInput->isChecked();
-    Member::MembershipType newType =
-            isPreferred ? Member::PREFERRED : Member::BASIC;
+//     // Get updated values
+//     QString newName = ui->nameInput->text();
+//     QString newExpiry = ui->expiryInput->text();
+//     bool isPreferred = ui->typeInput->isChecked();
+//     Member::MembershipType newType =
+//             isPreferred ? Member::PREFERRED : Member::BASIC;
 
-    if (newName.isEmpty() || newExpiry.isEmpty()) {
-        QMessageBox::warning(this,
-                             "Error", "Please enter valid member details.");
-        return;
-    }
+//     if (newName.isEmpty() || newExpiry.isEmpty()) {
+//         QMessageBox::warning(this,
+//                              "Error", "Please enter valid member details.");
+//         return;
+//     }
 
-    // Apply updates
-    m->setName(newName);
-    m->setExpiryDate(newExpiry);
-    m->setType(newType);
+//     // Apply updates
+//     m->setName(newName);
+//     m->setExpiryDate(QDate::fromString(newExpiry, "MM/dd/yyyy"));
+//     m->setType(newType);
 
-    memberManager.saveToFile("members.txt");
+//     memberManager.saveToFile("members.txt");
 
-    QMessageBox::information(this, "Success", "Member updated successfully!");
-}
+//     QMessageBox::information(this, "Success", "Member updated successfully!");
+// }
 
 // 🔹 Calculate rebates for Preferred Members
 void MainWindow::calculateRebates()
 {
     memberManager.calculateRebates();
-    // memberManager.displayRebates(this);
-
     setReportText(memberManager.getRebates());
 }
 
+
 void MainWindow::onUploadFileClicked() {
+    QDir path = QDir(QCoreApplication::applicationDirPath());
+
+    path.cdUp();
+    path.cdUp();
+    path.cdUp();
+
+
     QString fileName = QFileDialog::getOpenFileName(
             this,
             "Select Sales File",
-            QDir::homePath(),
+            path.absolutePath(),
             "Text Files (*.txt);"
         );
 
     if(fileName.isEmpty()) return;
 
+    if(MemberManager::processedFiles.contains(fileName)){
+        return;
+    }
+
+    std::cout<<fileName.toStdString()<<std::endl;
+
     memberManager.processSalesFile(fileName);
+
+    MemberManager::processedFiles.insert(fileName);
+
+    QString homeDir = GET_PROJECT_DIRECTORY();
+    QString purchaseFilesProcessedDir = homeDir + "/db/purchaseFilesProcessed.txt";
+
+    std::cout<<purchaseFilesProcessedDir.toStdString()<<std::endl;
+    std::cout<<"Here"<<std::endl;
+    QFile purchaseFilesProcessed(purchaseFilesProcessedDir);
+    std::cout<<"Here"<<std::endl;
+
+    if (purchaseFilesProcessed.open(QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&purchaseFilesProcessed);
+        out << fileName << "\n";
+        purchaseFilesProcessed.close();
+        qDebug() << "Data appended successfully.";
+    } else {
+        qWarning() << "Failed to open file for appending.";
+    }
 }
 
 void MainWindow::generateReport(){
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
+
     QString day = ui->reportDayInput->text();
     QString month = ui->reportMonthInput->text();
     QString year = ui->reportYearInput->text();
 
     QString report;
+
     if(day.isEmpty() || month.isEmpty()){
-        report = memberManager.generateYearReport(year.toInt());
+        if(year.isEmpty() || year.toInt() <= 0){
+            QMessageBox::warning(this,
+                                 "Error", "Please enter valid date or year.");
+            return;
+        }
+        report = memberManager.generateYearReport(year.toInt(), includedTypes);
     }else{
         int d = day.toInt();
         int m = month.toInt();
         int y = year.toInt();
-        Date date(d, m, y);
+        QDate date(y, m, d);
 
-        std::cout<<date.toString().toStdString()<<std::endl;
-
-        report = memberManager.generateDailyReport(date);
+        if(!date.isValid()){
+            QMessageBox::warning(this,
+                                 "Error", "Please enter valid date or year.");
+            return;
+        }
+        report = memberManager.generateDailyReport(date, includedTypes);
     }
-    ui->reportWindow->setPlainText(report);
+    setReportText(report);
 }
 
 
@@ -291,10 +385,36 @@ void MainWindow::onItemsSoldReport(){
 
 
 void MainWindow::onAllPurchaseReport(){
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
     double totalAmount = 0;
-    int id = ui->idInput->text().toInt();
 
-    Member *m = memberManager.searchMember(id);
+    QString searchType = QInputDialog::getItem(
+        this,
+        "Search By",
+        "Choose how you want to search:",
+        {"Name", "ID"},  // options
+        0,               // default index
+        false            // editable? (false = dropdown only)
+        );
+
+
+    Member* m;
+    if (!searchType.isEmpty()) {
+        if (searchType == "Name") {
+            bool ok;
+            QString name = QInputDialog::getText(this, "Search by Name", "Enter name:", QLineEdit::Normal, "", &ok);
+            if (ok && !name.isEmpty()) {
+                m = memberManager.searchMember(name, includedTypes);
+            }
+        } else if (searchType == "ID") {
+            bool ok;
+            QString id = QInputDialog::getText(this, "Search by ID", "Enter ID:", QLineEdit::Normal, "", &ok);
+            if (ok && !id.isEmpty()) {
+                m = memberManager.searchMember(id.toInt(), includedTypes);
+            }
+        }
+    }
+
 
     if (!m) {
         QMessageBox::warning(this, "Error", "Member not found!");
@@ -303,50 +423,33 @@ void MainWindow::onAllPurchaseReport(){
 
     QVector<Purchase> allPurchases = m->getAllPurchases();
 
-
-    QString projectRoot = QCoreApplication::applicationDirPath() + "/..";
-    QDir rootDir(projectRoot);
-    rootDir.cdUp();
-    rootDir.cdUp();
-
-    QDir reportsDir(rootDir.filePath("reports"));
-    if(!reportsDir.exists()){
-        reportsDir.mkpath(".");
-    }
-
-    QString filename = m->getName() + "-AllPurchaseReport.txt";
-    QString fullPath = reportsDir.filePath(filename);
-
-    QFile file(fullPath);
-
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
-        return;
-    }
-
-    QTextStream out(&file);
-
-
+    QString report = QString("All Purchase Report for: %1\n\n")
+                        .arg(m->getName());
     for(auto purchase : allPurchases){
         totalAmount += purchase.getTotalPrice();
 
-        out<<QString("%1 %2 %3 \n\n")
+        report += QString("%1 %2 %3 \n\n")
                    .arg(purchase.getItem().name, -25)
                    .arg(purchase.getQuantity(), 10)
                    .arg(purchase.getTotalPrice(), 10);
     }
 
-    out<<QString("Total Amount: %1 \n").arg(totalAmount);
+    report += QString("Total Amount: %1 \n").arg(totalAmount);
+
+    setReportText(report);
 }
 
 
 void MainWindow::onTotalPurchaseReport(){
-    QString report = memberManager.generateTotalPurchaseReport();
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
+    QString report = memberManager.generateTotalPurchaseReport(includedTypes);
     setReportText(report);
 }
 
 
 void MainWindow::membershipDueReport(){
-    QString report = memberManager.generateYearlyDuesReport();
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
+    QString report = memberManager.generateYearlyDuesReport(includedTypes);
     setReportText(report);
 }
 
@@ -406,10 +509,104 @@ void MainWindow::onItemsUnitsSold() {
     setReportText(report);
 }
 
+void MainWindow::onGetExpiringMembers() {
+    bool ok = false;
+
+    // Ask for month
+    int month = QInputDialog::getInt(
+        this, "Enter Month", "Enter expiration month (1–12):", QDate::currentDate().month(), 1, 12, 1, &ok);
+    if (!ok) return;
+
+    // Ask for year
+    int year = QInputDialog::getInt(
+        this, "Enter Year", "Enter expiration year (e.g., 2025):", QDate::currentDate().year(), 1900, 2100, 1, &ok);
+    if (!ok) return;
+
+
+    QSet<Member::MembershipType> includedTypes = getIncludedTypesSet();
+    QVector<Member> expiringMembers = memberManager.getExpiringMembers(month, year, includedTypes);
+
+    std::sort(expiringMembers.begin(),
+              expiringMembers.end(),
+              [] (const Member& a, const Member& b){
+                  return a.getExpiryDate() < b.getExpiryDate();
+              });
+
+    QString report = "Expiring Members Report: \n\n";
+
+    for(auto member: expiringMembers){
+        report += QString("%1%2Due: $%3\n")
+                      .arg(member.getName(), -30)
+                      .arg(member.getExpiryDate().toString("MM/dd/yyyy"), -20)
+                      .arg(member.getDues());
+    }
+
+    setReportText(report);
+}
+
+
+bool MainWindow::restoreData() {
+    QFile defaultMembers(":/data/static/warehouse shoppers.txt");
+
+    QString homeDir = GET_PROJECT_DIRECTORY();
+    // QString currentMembersDir = homeDir + "/db/currentMembers.txt";
+    QString purchaseFilesProcessedDir = homeDir + "/db/purchaseFilesProcessed.txt";
+    std::cout<<purchaseFilesProcessedDir.toStdString()<<std::endl;
+
+    QFile purchaseFilesProcessed(purchaseFilesProcessedDir);
+    // QFile currentMembers(currentMembersDir);
+
+    // if(!currentMembers.exists() || currentMembers.exists() && currentMembers.size() == 0){
+        if(!defaultMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
+            return false;
+        }
+        memberManager.loadShoppersFile(defaultMembers);
+
+
+    // }
+    // else{
+        // if(!currentMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
+        //     return false;
+        // }
+        // memberManager.loadShoppersFile(currentMembers);
+    // }
+
+    if(!purchaseFilesProcessed.open(QIODevice::ReadOnly | QIODevice::Text)){
+            std::cout<<"Problem"<<std::endl;
+        return false;
+    }
+
+    QTextStream in(&purchaseFilesProcessed);
+
+    while(!in.atEnd()){
+        QString filePath = in.readLine().trimmed();
+
+        if(filePath.isEmpty()) continue;
+
+        memberManager.processSalesFile(filePath);
+    }
+
+    return true;
+}
+
+
 void MainWindow::setReportText(const QString& report){
     ui->reportWindow->setPlainText(report);
 }
 
+QSet<Member::MembershipType> MainWindow::getIncludedTypesSet(){
+    QSet<Member::MembershipType> includedTypes;
+
+    if(ui->preferredCheckbox->isChecked()){
+        includedTypes.insert(Member::PREFERRED);
+    }
+
+    if(ui->basicCheckbox->isChecked()){
+        includedTypes.insert(Member::BASIC);
+    }
+
+    return includedTypes;
+}
 
 
 

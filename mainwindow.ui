@@ -23,11 +23,11 @@
       <x>10</x>
       <y>10</y>
       <width>351</width>
-      <height>601</height>
+      <height>541</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="homePage">
      <widget class="QPushButton" name="memberManagementButton">
@@ -272,7 +272,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>540</y>
+        <y>510</y>
         <width>291</width>
         <height>29</height>
        </rect>
@@ -363,7 +363,7 @@
       <property name="geometry">
        <rect>
         <x>90</x>
-        <y>240</y>
+        <y>270</y>
         <width>121</width>
         <height>21</height>
        </rect>
@@ -373,7 +373,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>270</y>
+        <y>240</y>
         <width>62</width>
         <height>20</height>
        </rect>
@@ -409,7 +409,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>240</y>
+        <y>270</y>
         <width>62</width>
         <height>20</height>
        </rect>
@@ -432,7 +432,7 @@
       <property name="geometry">
        <rect>
         <x>90</x>
-        <y>270</y>
+        <y>240</y>
         <width>121</width>
         <height>21</height>
        </rect>
@@ -464,6 +464,19 @@
        <string>Year</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="expiringMembers">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>470</y>
+        <width>201</width>
+        <height>29</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Get Expiring Members</string>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QPlainTextEdit" name="reportWindow">
@@ -483,6 +496,45 @@
     </property>
     <property name="plainText">
      <string/>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="preferredCheckbox">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>560</y>
+      <width>61</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Preferred</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="basicCheckbox">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>560</y>
+      <width>51</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Basic</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>560</y>
+      <width>41</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Include: </string>
     </property>
    </widget>
   </widget>

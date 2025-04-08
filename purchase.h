@@ -2,7 +2,7 @@
 #define PURCHASE_H
 
 #include <QString>
-#include "date.h"
+#include <QDate>
 
 struct Item{
     QString name;
@@ -23,18 +23,18 @@ class Purchase
 public:
     static QMap<Item, int> itemList;
 
-    Purchase(Item item, int quantity, Date date) :
+    Purchase(Item item, int quantity, QDate date) :
         item(item), quantity(quantity), date(date) {}
 
     Item getItem() const;
     int getQuantity() const;
-    Date getDate() const;
+    QDate getDate() const;
     double getTotalPrice() const;
 
 private:
     Item item;
     int quantity;
-    Date date;
+    QDate date;
 };
 
 #endif // PURCHASE_H

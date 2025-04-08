@@ -5,7 +5,7 @@
 Member::Member(QString name,
                int id,
                MembershipType type,
-               Date expiryDate,
+               QDate expiryDate,
                double totalSpent):
         name(name),
         id(id),
@@ -21,7 +21,7 @@ int Member::getId() const {
     return id;
 }
 
-Date Member::getExpiryDate() const {
+QDate Member::getExpiryDate() const {
     return expiryDate;
 }
 
@@ -57,7 +57,7 @@ void Member::setName(const QString &newName){
     name = newName;
 }
 
-void Member::setExpiryDate(const Date &newExpiry) {
+void Member::setExpiryDate(const QDate& newExpiry) {
     expiryDate = newExpiry;
 }
 
@@ -70,7 +70,7 @@ void Member::setTotalSpent(double amount) {
 }
 
 void Member::addPurchase(const Purchase& purchase) {
-    Date date = purchase.getDate();
+    QDate date = purchase.getDate();
     purchases[date].push_back(purchase);
 
     totalSpent += purchase.getTotalPrice() * (1+SALES_TAX);
@@ -78,16 +78,17 @@ void Member::addPurchase(const Purchase& purchase) {
     Purchase::itemList[purchase.getItem()] += purchase.getQuantity();
 }
 
-QVector<Purchase> Member::getPurchaseOnDate(const Date& date) const{
+QVector<Purchase> Member::getPurchaseOnDate(const QDate& date) const{
     return purchases[date];
 }
 
 
 QVector<Purchase> Member::getPurchaseOnYear(int year) const {
-    Date startingDate(1, 1, year);
-    Date endingDate(31, 12, year);
+    QDate startingDate(year, 1, 1);
+    QDate endingDate(year, 12, 31);
     QVector<Purchase> purchasesInYear;
-    for(const Date& date : purchases.keys()){
+
+    for(const QDate& date : purchases.keys()){
         if(date >= startingDate && date <= endingDate){
             for(auto e : purchases[date]){
                 purchasesInYear.push_back(e);
@@ -112,9 +113,9 @@ QString Member::toString() const {
     return QString("%1 %2 %3 %4 $%5 $%6\n")
         .arg(name, -25)
         .arg(id, -8)
-        .arg(getTypeAsString(), -10)
-        .arg(expiryDate.toString(), -10)
-        .arg(totalSpent, -10)
+        .arg(getTypeAsString(), -12)
+        .arg(expiryDate.toString("MM/dd/yyyy"), -12)
+        .arg(totalSpent, -12)
         .arg(getRebate(), -10);
 }
 
