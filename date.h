@@ -31,6 +31,7 @@ public:
     bool operator<= (const Date& other) const;
 
     static Date parseDateStringToDate(const QString& dateStr);
+    static bool isValidDateString(const QString& dateStr);
 private:
     int day;
     int month;

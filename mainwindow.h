@@ -33,10 +33,17 @@ private slots:
     void onMembersUpgrade();
     void onMembersDowngrade();
     void onItemsUnitsSold();
+
+    void onMemberManagementButton();
+    void onSalesReportButton();
+    void onHome();
+
+
 private:
     Ui::MainWindow *ui;
     MemberManager memberManager;
 
+    void changePage(int index);
     void setReportText(const QString& report);
 };
 

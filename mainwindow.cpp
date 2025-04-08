@@ -75,10 +75,57 @@ MainWindow::MainWindow(QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::onItemsUnitsSold);
+
+    connect(ui->memberManagementButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onMemberManagementButton);
+
+    connect(ui->salesReportButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::onSalesReportButton);
+
+    for(int i = 1; i < ui->PageManager->count(); i++){
+        QWidget* page = ui->PageManager->widget(i);
+
+        QVector<QPushButton*> buttons = page->findChildren<QPushButton*>();
+        for(auto button : buttons){
+            QString buttonName = button->objectName();
+            if(buttonName.contains("homeButton")){
+                connect(button,
+                        &QPushButton::clicked,
+                        this,
+                        &MainWindow::onHome);
+            }
+        }
+    }
+
+    QFont monospacedFont("Courier New");
+    monospacedFont.setStyleHint(QFont::Monospace);
+    monospacedFont.setPixelSize(12);
+    ui->reportWindow->setFont(monospacedFont);
 }
+
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::changePage(int index) {
+    ui->PageManager->setCurrentIndex(index);
+}
+
+void MainWindow::onHome() {
+    changePage(0);
+}
+
+void MainWindow::onMemberManagementButton(){
+    changePage(1);
+}
+
+void MainWindow::onSalesReportButton(){
+    changePage(2);
 }
 
 // 🔹 Add a new member
@@ -128,16 +175,18 @@ void MainWindow::searchMember()
 // 🔹 Display all members
 void MainWindow::displayAllMembers()
 {
-    QList<Member> members = memberManager.getAllMembers();
+    QVector<Member> members = memberManager.getAllMembers();
     QString list;
 
     for (const Member &m : members) {
-        list += m.toString() + "\n";
+        list += m.toString();
     }
 
-    QMessageBox::information(this,
-                             "All Members",
-                             list.isEmpty() ? "No members found." : list);
+    // QMessageBox::information(this,
+    //                          "All Members",
+    //                          list.isEmpty() ? "No members found." : list);
+
+    setReportText(list);
 }
 
 // 🔹 Update an existing member
@@ -229,33 +278,15 @@ void MainWindow::onItemsSoldReport(){
         return a.second > b.second;
     });
 
-    QString projectRoot = QCoreApplication::applicationDirPath() + "/..";
-    QDir rootDir(projectRoot);
-    rootDir.cdUp();
-    rootDir.cdUp();
-
-    QDir reportsDir(rootDir.filePath("reports"));
-    if(!reportsDir.exists()){
-        reportsDir.mkpath(".");
-    }
-
-    QString filename = "SoldItemsReport.txt";
-    QString fullPath = reportsDir.filePath(filename);
-
-    QFile file(fullPath);
-
-    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
-        return;
-    }
-
-    QTextStream out(&file);
+    QString report = "";
 
     for(const auto& pair : sortedVector){
-        out<<QString("%1 %2 %3 \n\n")
+        report += QString("%1 %2 %3 \n\n")
                    .arg(pair.first.name, -20)
                    .arg(pair.second, 10)
                    .arg(pair.first.price * pair.second, 10);
     }
+    setReportText(report);
 }
 
 

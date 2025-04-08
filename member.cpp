@@ -37,6 +37,10 @@ QString Member::getTypeAsString() const {
     return (type == BASIC) ? "Basic" : "Preferred";
 }
 
+bool Member::isPreferred() const {
+    return type == PREFERRED;
+}
+
 double Member::getDues() const {
     return getType() == PREFERRED ? PREFERRED_PRICE : BASIC_PRICE;
 }
@@ -103,21 +107,15 @@ QVector<Purchase> Member::getAllPurchases() const {
     return allPurchases;
 }
 
-QString Member::toString() const {/*
-    QString n = name.leftJustified(20, ' ');
-    QString id = QString(id).leftJustified(10, ' ');
-    QString type = getTypeAsString().leftJustified(12, ' ');
-    QString date = expiryDate.leftJustified(12, ' ');
+QString Member::toString() const {
 
-    return n + id + type + date + QString::number(getRebate());*/
-
-    return QString("%1, %2, %3, %4, $%5, Rebate: $%6")
-        .arg(name)
-        .arg(id)
-        .arg(getTypeAsString())
-        .arg(expiryDate.toString())
-        .arg(totalSpent)
-        .arg(getRebate());
+    return QString("%1 %2 %3 %4 $%5 $%6\n")
+        .arg(name, -25)
+        .arg(id, -8)
+        .arg(getTypeAsString(), -10)
+        .arg(expiryDate.toString(), -10)
+        .arg(totalSpent, -10)
+        .arg(getRebate(), -10);
 }
 
 

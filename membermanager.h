@@ -11,7 +11,9 @@ class MemberManager {
 public:
     void addMember(const Member &member);
     bool removeMember(int id);
+
     Member* searchMember(int id);
+    Member* searchMember(const QString& name) const;
     QVector<Member> getAllMembers() const;
 
     void saveToFile(const QString &filename);
@@ -27,7 +29,7 @@ public:
     QString generateYearReport(int year) const;
     QString generateDailyReport(const Date& date) const;
     QString generateTotalPurchaseReport() const;
-    QString generateYearyDuesReport() const;
+    QString generateYearlyDuesReport() const;
     QVector<Member> getMembersShouldUpgrade() const;
     QVector<Member> getMembersShouldDowngrade() const;
 

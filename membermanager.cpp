@@ -22,7 +22,16 @@ Member* MemberManager::searchMember(int id) {
     return nullptr;
 }
 
-QList<Member> MemberManager::getAllMembers() const {
+Member* MemberManager::searchMember(const QString& name) const {
+    for(auto member: members){
+        if(member.getName() == name){
+            return &member;
+        }
+    }
+    return nullptr;
+}
+
+QVector<Member> MemberManager::getAllMembers() const {
     return members.values();
 }
 
@@ -314,7 +323,7 @@ QString MemberManager::generateTotalPurchaseReport() const {
 
 
 
-QString MemberManager::generateYearyDuesReport() const{
+QString MemberManager::generateYearlyDuesReport() const{
     QVector<Member> preferredMembers;
     QVector<Member> basicMembers;
 

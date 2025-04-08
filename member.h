@@ -30,7 +30,7 @@ public:
     QString getTypeAsString() const;
     Date getExpiryDate() const;
 
-
+    bool isPreferred() const;
     double getTotalSpent() const;
     double getRebate() const;
     double getSavings() const;
