@@ -28,6 +28,8 @@ public:
     // 🔹 New methods for processing sales and rebates
     void loadShoppersFile(QFile& file);
     void loadShoppersFile(const QString& filename);
+    void loadShoppersFileFormatted();
+
     void processSalesFile(const QString &filename);
     void calculateRebates();
     // void displayRebates(QWidget *parent);

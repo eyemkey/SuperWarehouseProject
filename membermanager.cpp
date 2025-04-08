@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <tuple>
+#include "utility.h"
 
 QSet<QString> MemberManager::processedFiles;
 
@@ -130,6 +131,48 @@ void MemberManager::loadShoppersFile(const QString& filename) {
     loadShoppersFile(file);
 }
 
+void MemberManager::loadShoppersFileFormatted() {
+    QString currentMembersDir = GET_MEMBERS_FILE_DIRECTORY();
+    QFile currentMembers(currentMembersDir);
+
+    if(!currentMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
+        qDebug() << "Failed to open current Members file";
+        return;
+    }
+
+    QTextStream in(&currentMembers);
+
+    while(!in.atEnd()){
+        QString line = in.readLine().trimmed();
+
+        if(line.isEmpty()) continue;
+
+        QVector<QString> parts = line.split(", ");
+
+        if(parts.size() != 4){
+            qDebug() <<"Invalid line format, skipping:"<<line;
+            continue;
+        }
+        std::cout<<line.toStdString()<<std::endl;
+        std::cout<<parts[3].toStdString()<<std::endl;
+
+        int id = parts[0].toInt();
+        QString name = parts[1];
+        QString typeStr = parts[2];
+        QString expiryStr = parts[3];
+
+        QDate date = QDate::fromString(expiryStr, "MM/dd/yyyy");
+        std::cout<<date.toString("MM/dd/yyyy").toStdString()<<std::endl;
+
+        Member::MembershipType type = (typeStr == "Preferred") ? Member::PREFERRED : Member::BASIC;
+        Member m(name, id, type, QDate::fromString(expiryStr, "MM/dd/yyyy"));
+
+        members[id] = m;
+        totalSpent[id] = 0;
+    }
+}
+
+
 // 🔹 Process purchases from day1.txt
 void MemberManager::processSalesFile(const QString &filename) {
 
@@ -153,9 +196,11 @@ void MemberManager::processSalesFile(const QString &filename) {
         double price = priceQuantity[0].toDouble();
         int quantity = priceQuantity[1].toInt();
 
-        QDate d = QDate::fromString(date, "MM/dd/yyyy");
-        Purchase purchase(Item(itemName, price), quantity, QDate::fromString(date, "MM/dd/yyyy"));
-        members[id].addPurchase(purchase);
+        if(containsMember(id)){
+            QDate d = QDate::fromString(date, "MM/dd/yyyy");
+            Purchase purchase(Item(itemName, price), quantity, QDate::fromString(date, "MM/dd/yyyy"));
+            members[id].addPurchase(purchase);
+        }
     }
     file.close();
 }

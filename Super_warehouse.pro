@@ -13,13 +13,15 @@ SOURCES += \
     mainwindow.cpp \
     member.cpp \
     membermanager.cpp \
-    purchase.cpp
+    purchase.cpp \
+    utility.cpp
 
 HEADERS += \
     mainwindow.h \
     member.h \
     membermanager.h \
-    purchase.h
+    purchase.h \
+    utility.h
 
 FORMS += \
     mainwindow.ui
