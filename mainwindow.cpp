@@ -14,6 +14,21 @@ QString MainWindow::GET_PROJECT_DIRECTORY() {
     return dir.absolutePath();
 }
 
+QString MainWindow::GET_PURCHASES_PROCESSED_DIRECTORY (){
+    QString homeDir = GET_PROJECT_DIRECTORY();
+    QString purchaseFilesProcessedDir = homeDir
+                                        + "/db/purchaseFilesProcessed.txt";
+
+    return purchaseFilesProcessedDir;
+}
+
+QString MainWindow::GET_MEMBERS_FILE_DIRECTORY() {
+    QString homeDir = GET_PROJECT_DIRECTORY();
+    QString membersFileDir = homeDir + "/db/currentMembers.txt";
+
+    return membersFileDir;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -165,7 +180,32 @@ void MainWindow::addMember() {
         return;
     }
 
-    memberManager.addMember(Member(name, id, type, expiryDate));
+    Member member(name, id, type, expiryDate);
+    memberManager.addMember(member);
+
+    QString currentMembersDir = GET_MEMBERS_FILE_DIRECTORY();
+    std::cout<<currentMembersDir.toStdString()<<std::endl;
+    QFile currentMembers(currentMembersDir);
+
+    QString memberInfo = QString("%1\n%2\n%3\n%4\n")
+                             .arg(member.getName())
+                             .arg(member.getId())
+                             .arg(member.isPreferred() ? "Preferred" : "Basic")
+                             .arg(member.getExpiryDate().toString("MM/dd/yyyy"));
+
+    std::cout<<"Writeable: "<<currentMembers.isWritable()<<std::endl;
+    std::cout<<"Open: "<<currentMembers.isOpen()<<std::endl;
+
+    std::cout<<memberInfo.toStdString()<<std::endl;
+    if (currentMembers.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&currentMembers);
+        out << memberInfo;
+        currentMembers.close();
+        qDebug() << "Data appended successfully.";
+    } else {
+        qDebug() << "Failed to open file for appending.";
+    }
+
     QMessageBox::information(this, "Success", "Member added successfully!");
 }
 
@@ -548,28 +588,20 @@ void MainWindow::onGetExpiringMembers() {
 bool MainWindow::restoreData() {
     QFile defaultMembers(":/data/static/warehouse shoppers.txt");
 
-    QString homeDir = GET_PROJECT_DIRECTORY();
-    // QString currentMembersDir = homeDir + "/db/currentMembers.txt";
-    QString purchaseFilesProcessedDir = homeDir + "/db/purchaseFilesProcessed.txt";
-    std::cout<<purchaseFilesProcessedDir.toStdString()<<std::endl;
+    QString currentMembersDir = GET_MEMBERS_FILE_DIRECTORY();
+    QString purchaseFilesProcessedDir = GET_PURCHASES_PROCESSED_DIRECTORY();
+
+    copyDefaultMembersToDb(defaultMembers);
 
     QFile purchaseFilesProcessed(purchaseFilesProcessedDir);
-    // QFile currentMembers(currentMembersDir);
-
-    // if(!currentMembers.exists() || currentMembers.exists() && currentMembers.size() == 0){
-        if(!defaultMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
-            return false;
-        }
-        memberManager.loadShoppersFile(defaultMembers);
+    QFile currentMembers(currentMembersDir);
 
 
-    // }
-    // else{
-        // if(!currentMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
-        //     return false;
-        // }
-        // memberManager.loadShoppersFile(currentMembers);
-    // }
+    if(!currentMembers.open(QIODevice::ReadOnly | QIODevice::Text)){
+        return false;
+    }
+    memberManager.loadShoppersFile(currentMembers);
+
 
     if(!purchaseFilesProcessed.open(QIODevice::ReadOnly | QIODevice::Text)){
             std::cout<<"Problem"<<std::endl;
@@ -593,6 +625,66 @@ bool MainWindow::restoreData() {
 void MainWindow::setReportText(const QString& report){
     ui->reportWindow->setPlainText(report);
 }
+
+void MainWindow::copyDefaultMembersToDb(QFile& defaultFile){
+
+    std::cout<<defaultFile.isWritable()<<std::endl;
+
+    QString membersFileDir = GET_MEMBERS_FILE_DIRECTORY();
+
+    QFile currentMembers(membersFileDir);
+
+    std::cout<<currentMembers.isWritable()<<std::endl;
+    if (currentMembers.exists()) {
+
+        if (currentMembers.open(QIODevice::ReadOnly)) {
+
+            if (currentMembers.size() == 0) {
+                qDebug() << "Target file is empty. Proceeding to copy...";
+                currentMembers.close();
+
+                // Actually copy file content from defaultFile
+                if (defaultFile.exists() && defaultFile.open(QIODevice::ReadOnly)) {
+
+                    if (currentMembers.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+
+                        currentMembers.write(defaultFile.readAll());
+                        currentMembers.close();
+                        qDebug() << "File copied successfully.";
+
+                    }else {
+                        qDebug() << "Failed to open target file for writing.";
+                    }
+
+                    defaultFile.close();
+
+                } else {
+                    qDebug() << "Default file does not exist or could not be opened.";
+                }
+            } else {
+                qDebug() << "Target file is not empty. Skipping copy.";
+                currentMembers.close();
+            }
+        } else {
+            qDebug() << "Could not open target file for reading.";
+        }
+    } else {
+        // If file doesn't exist, just copy using QFile::copy
+        qDebug() << "Target file does not exist. Copying...";
+        if (!QFile::copy(defaultFile.fileName(), membersFileDir)) {
+            qDebug() << "Copy failed.";
+        } else {
+            qDebug() << "Copy succeeded.";
+            QFile membersFile(membersFileDir);
+            if (!membersFile.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ReadUser | QFile::WriteUser)) {
+                qDebug() << "Failed to set file writable:" << membersFile.errorString();
+            } else {
+                qDebug() << "File copied and now writable.";
+            }
+        }
+    }
+}
+
 
 QSet<Member::MembershipType> MainWindow::getIncludedTypesSet(){
     QSet<Member::MembershipType> includedTypes;

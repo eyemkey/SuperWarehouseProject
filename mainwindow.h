@@ -17,6 +17,8 @@ public:
     ~MainWindow();
 
     static QString GET_PROJECT_DIRECTORY();
+    static QString GET_PURCHASES_PROCESSED_DIRECTORY();
+    static QString GET_MEMBERS_FILE_DIRECTORY();
 
 private slots:
     void addMember();
@@ -50,6 +52,7 @@ private:
     bool restoreData();
     void changePage(int index);
     void setReportText(const QString& report);
+    void copyDefaultMembersToDb(QFile& defaultFile);
     QSet<Member::MembershipType> getIncludedTypesSet();
 };
 
