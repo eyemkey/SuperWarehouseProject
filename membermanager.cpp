@@ -212,39 +212,26 @@ void MemberManager::calculateRebates() {
     for (auto id : members.keys()) {
         if (members[id].getType() == Member::PREFERRED) {
             double rebate = members[id].getTotalSpent() * 0.05;  // 5% rebate
-            members[id].setTotalSpent(totalSpent[id]); // Store total spent
             qDebug() << "Member:" << members[id].getName() << "Rebate: $" << rebate;
         }
     }
 }
 
-// 🔹 Display rebate results in a Qt Message Box
-// void MemberManager::displayRebates(QWidget *parent) {
-//     QString result = "Rebate Summary for Preferred Members:\n";
 
-//     for (auto id : members.keys()) {
-//         if (members[id].getType() == Member::PREFERRED) {
-//             double rebate = totalSpent[id] * 0.05;
-//             result += QString("%1 (ID: %2): $%3\n")
-//                           .arg(members[id].getName())
-//                           .arg(id)
-//                           .arg(rebate, 0, 'f', 2);
-//         }
-//     }
-
-//     QMessageBox::information(parent, "Rebate Report", result);
-// }
-
-QString MemberManager::getRebates() const{
+QString MemberManager::getRebates() {
     QString result = "";
 
-    for(auto id : members.keys()){
+    for(auto& id : members.keys()){
         if(members[id].getType() == Member::PREFERRED){
-            double rebate = members[id].getTotalSpent() * 0.05;
-            result += QString("%1 %2 $%3\n")
-                                      .arg(members[id].getName(), -25)
-                                      .arg(id, -10)
-                                    .arg(QString::number(rebate, 'f', 2), -10);
+            // double rebate = members[id].getTotalSpent() * 0.05;
+            std::cout<<members[id].toString().toStdString()<<std::endl;
+            std::cout<<members[id].getRebate()<<std::endl;
+            // result += QString("%1 %2 $%3\n")
+            //                           .arg(members[id].getName(), -25)
+            //                           .arg(id, -10)
+            //               .arg(QString::number(members[id].getRebate(), 'f', 2), -10);
+
+            result += members[id].toString();
         }
     }
 

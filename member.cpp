@@ -46,7 +46,7 @@ double Member::getDues() const {
 }
 
 double Member::getRebate() const {
-    return (type == PREFERRED) ? totalSpent / (1+SALES_TAX) * REBATE_RATE : 0.0;
+    return (type == PREFERRED) ? (totalSpent / (1+SALES_TAX) * REBATE_RATE) : 0.0;
 }
 
 double Member::getSavings() const {

@@ -566,8 +566,13 @@ void MainWindow::onGetExpiringMembers() {
 
     QString report = "Expiring Members Report: \n\n";
 
+    report += QString("%1 %2 %3\n\n")
+                  .arg("Name", -30)
+                  .arg("Expiration Date", -20)
+                  .arg("Due", -10);
+
     for(auto member: expiringMembers){
-        report += QString("%1%2Due: $%3\n")
+        report += QString("%1 %2 $%3\n")
                       .arg(member.getName(), -30)
                       .arg(member.getExpiryDate().toString("MM/dd/yyyy"), -20)
                       .arg(member.getDues());

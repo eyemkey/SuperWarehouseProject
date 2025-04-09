@@ -33,7 +33,7 @@ public:
     void processSalesFile(const QString &filename);
     void calculateRebates();
     // void displayRebates(QWidget *parent);
-    QString getRebates() const;
+    QString getRebates();
 
     QString generateYearReport(int year, QSet<Member::MembershipType> includedTypes) const;
     QString generateDailyReport(const QDate& date, QSet<Member::MembershipType> includedTypes) const;
