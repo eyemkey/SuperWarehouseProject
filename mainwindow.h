@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include "membermanager.h"
-#include "utility.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

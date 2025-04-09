@@ -115,8 +115,8 @@ QString Member::toString() const {
         .arg(id, -8)
         .arg(getTypeAsString(), -12)
         .arg(expiryDate.toString("MM/dd/yyyy"), -12)
-        .arg(totalSpent, -12)
-        .arg(getRebate(), -10);
+        .arg(QString::number(totalSpent, 'f', 2), -12)
+        .arg(QString::number(getRebate(), 'f', 2), -10);
 }
 
 

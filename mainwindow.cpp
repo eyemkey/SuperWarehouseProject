@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <iostream>
+#include "utility.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -368,7 +369,7 @@ void MainWindow::onItemsSoldReport(){
     }
 
     std::sort(sortedVector.begin(), sortedVector.end(), [](const QPair<Item, int> &a, const QPair<Item, int> &b){
-        return a.second > b.second;
+        return a.first.name < b.first.name;
     });
 
     QString report = "";
@@ -414,6 +415,7 @@ void MainWindow::onAllPurchaseReport(){
         }
     }
 
+    // std::cout<<m->getName().toStdString()<<std::endl;
 
     if (!m) {
         QMessageBox::warning(this, "Error", "Member not found!");

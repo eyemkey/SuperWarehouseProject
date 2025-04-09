@@ -510,6 +510,9 @@
     <property name="text">
      <string>Preferred</string>
     </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QCheckBox" name="basicCheckbox">
     <property name="geometry">
@@ -522,6 +525,9 @@
     </property>
     <property name="text">
      <string>Basic</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QLabel" name="label_4">

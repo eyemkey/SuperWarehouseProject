@@ -30,12 +30,13 @@ Member* MemberManager::searchMember(int id, QSet<Member::MembershipType> include
     return nullptr;
 }
 
-Member* MemberManager::searchMember(const QString& name, QSet<Member::MembershipType> includedTypes) const {
-    for(auto member: members){
+Member* MemberManager::searchMember(const QString& name, QSet<Member::MembershipType> includedTypes) {
+    for(auto& member: members){
         if(!includedTypes.contains(member.getType())){
             continue;
         }
 
+        std::cout<<member.getName().toStdString()<<" "<<name.toStdString()<<std::endl;
         if(member.getName() == name){
             return &member;
         }
@@ -185,20 +186,20 @@ void MemberManager::processSalesFile(const QString &filename) {
     QTextStream in(&file);
     while (!in.atEnd()) {
         QString date = in.readLine();  // Read transaction date
-
         int id = in.readLine().toInt(); // Read customer ID
 
         QString itemName = in.readLine();
-        QStringList priceQuantity = in.readLine().split("\t");
 
+        QStringList priceQuantity = in.readLine().split("\t");
         if (priceQuantity.size() < 2) continue;
 
         double price = priceQuantity[0].toDouble();
         int quantity = priceQuantity[1].toInt();
 
+        // std::cout<<date.toStdString()<<" "<<id<<" "<<itemName.toStdString()<<" "<<price<<" "<<quantity<<std::endl;
         if(containsMember(id)){
             QDate d = QDate::fromString(date, "MM/dd/yyyy");
-            Purchase purchase(Item(itemName, price), quantity, QDate::fromString(date, "MM/dd/yyyy"));
+            Purchase purchase(Item(itemName, price), quantity, d);
             members[id].addPurchase(purchase);
         }
     }
@@ -437,9 +438,11 @@ QString MemberManager::generateYearlyDuesReport(QSet<Member::MembershipType> inc
 
     QString report = "";
 
+    std::cout<<basicMembers[0].getDues()<<std::endl;
+    std::cout<<preferredMembers[0].getDues()<<std::endl;
 
-    double basicMemberDues = !basicMembers.isEmpty() ? 0 :  basicMembers.size() * basicMembers[0].getDues();;
-    double preferredMemberDues = !preferredMembers.isEmpty() ? 0 : preferredMembers.size() * preferredMembers[0].getDues();;
+    double basicMemberDues = basicMembers.isEmpty() ? 0 :  basicMembers.size() * basicMembers[0].getDues();;
+    double preferredMemberDues = preferredMembers.isEmpty() ? 0 : preferredMembers.size() * preferredMembers[0].getDues();;
 
 
     if(includedTypes.contains(Member::BASIC)){

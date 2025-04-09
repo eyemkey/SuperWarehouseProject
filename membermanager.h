@@ -16,7 +16,7 @@ public:
     bool containsMember(int id);
 
     Member* searchMember(int id, QSet<Member::MembershipType> includedTypes);
-    Member* searchMember(const QString& name, QSet<Member::MembershipType> includedTypes) const;
+    Member* searchMember(const QString& name, QSet<Member::MembershipType> includedTypes);
 
 
     QVector<Member> getAllMembers(QSet<Member::MembershipType> includedTypes) const;
