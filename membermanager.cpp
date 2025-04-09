@@ -199,7 +199,8 @@ void MemberManager::processSalesFile(const QString &filename) {
         // std::cout<<date.toStdString()<<" "<<id<<" "<<itemName.toStdString()<<" "<<price<<" "<<quantity<<std::endl;
         if(containsMember(id)){
             QDate d = QDate::fromString(date, "MM/dd/yyyy");
-            Purchase purchase(Item(itemName, price), quantity, d);
+            Item item(itemName, price);
+            Purchase purchase(item, quantity, d);
             members[id].addPurchase(purchase);
         }
     }

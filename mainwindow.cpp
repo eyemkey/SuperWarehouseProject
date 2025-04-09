@@ -17,7 +17,17 @@ MainWindow::MainWindow(QWidget *parent)
     // memberManager.loadShoppersFile(":/data/static/warehouse shoppers.txt");
 
     bool isDataRestored = restoreData();
-    std::cout<<isDataRestored<<std::endl;
+
+
+    //Copy Constructor Test
+    // Purchase purchase1(Item("abc", 10), 5, QDate::currentDate());
+    // Purchase purchase2(purchase1);
+
+    // if(&purchase1 != &purchase2){
+    //     std::cout<<purchase1.toString().toStdString()<<std::endl;
+    //     std::cout<<purchase2.toString().toStdString()<<std::endl;
+    // }
+
 
     // 🔹 Ensure both buttons are properly connected
     connect(ui->addButton,
