@@ -1,1 +1,2 @@
 D:/_College/_Spring 2025/CS008/Super_warehouse/static/day1.txt
+D:/_College/_Spring 2025/CS008/Super_warehouse/static/day2.txt

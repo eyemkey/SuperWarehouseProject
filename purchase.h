@@ -24,7 +24,8 @@ public:
     static QMap<Item, int> itemList;
 
     Purchase(Item item, int quantity, QDate date) :
-        item(item), quantity(quantity), date(date) {}
+        item(&item), quantity(quantity), date(date) {}
+
 
     Item getItem() const;
     int getQuantity() const;
@@ -32,7 +33,7 @@ public:
     double getTotalPrice() const;
 
 private:
-    Item item;
+    Item* item;
     int quantity;
     QDate date;
 };

@@ -112,7 +112,7 @@ QString Member::toString() const {
 
     return QString("%1 %2 %3 %4 $%5 $%6\n")
         .arg(name, -25)
-        .arg(id, -8)
+        .arg(id, -10)
         .arg(getTypeAsString(), -12)
         .arg(expiryDate.toString("MM/dd/yyyy"), -12)
         .arg(QString::number(totalSpent, 'f', 2), -12)

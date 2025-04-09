@@ -2,6 +2,16 @@
 
 QMap<Item, int> Purchase::itemList;
 
+
+Purchase::Purchase(Item item, int quantity, QDate date) :
+    item(&item), quantity(quantity), date(date) {}
+
+Purchase::Purchase(const Purchase& other){
+    item = new Item(*other.item);
+    quantity (other.quantity);
+    
+}
+
 Item Purchase::getItem() const {
     return *item;
 }

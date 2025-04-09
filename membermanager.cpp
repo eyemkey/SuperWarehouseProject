@@ -97,7 +97,7 @@ void MemberManager::loadFromFile(const QString &filename) {
 
         // 🔹 Remove redundant initialization:
         // totalSpent[id] = 0.0;
-        totalSpent[id] = spent;  // Correctly store total spent
+        // totalSpent[id] = spent;  // Correctly store total spent
     }
     file.close();
 }
@@ -116,7 +116,7 @@ void MemberManager::loadShoppersFile(QFile& file) {
 
         Member::MembershipType type = (typeStr == "Preferred") ? Member::PREFERRED : Member::BASIC;
         members[id] = Member(name, id, type, QDate::fromString(expiry, "MM/dd/yyyy"));
-        totalSpent[id] = 0.0; // Initialize spending to 0
+        // totalSpent[id] = 0.0; // Initialize spending to 0
     }
 
 }
@@ -169,7 +169,7 @@ void MemberManager::loadShoppersFileFormatted() {
         Member m(name, id, type, QDate::fromString(expiryStr, "MM/dd/yyyy"));
 
         members[id] = m;
-        totalSpent[id] = 0;
+        // totalSpent[id] = 0;
     }
 }
 
@@ -210,7 +210,7 @@ void MemberManager::processSalesFile(const QString &filename) {
 void MemberManager::calculateRebates() {
     for (auto id : members.keys()) {
         if (members[id].getType() == Member::PREFERRED) {
-            double rebate = totalSpent[id] * 0.05;  // 5% rebate
+            double rebate = members[id].getTotalSpent() * 0.05;  // 5% rebate
             members[id].setTotalSpent(totalSpent[id]); // Store total spent
             qDebug() << "Member:" << members[id].getName() << "Rebate: $" << rebate;
         }
@@ -235,15 +235,15 @@ void MemberManager::calculateRebates() {
 // }
 
 QString MemberManager::getRebates() const{
-    QString result = "Rebate Summary for Preferred members:\n";
+    QString result = "";
 
     for(auto id : members.keys()){
         if(members[id].getType() == Member::PREFERRED){
-            double rebate = totalSpent[id] * 0.05;
-            result += QString("%1 (ID: %2): $%3\n")
-                                      .arg(members[id].getName())
-                                      .arg(id)
-                                      .arg(rebate, 0, 'f', 2);
+            double rebate = members[id].getTotalSpent() * 0.05;
+            result += QString("%1 %2 $%3\n")
+                                      .arg(members[id].getName(), -25)
+                                      .arg(id, -10)
+                                    .arg(QString::number(rebate, 'f', 2), -10);
         }
     }
 
@@ -253,7 +253,7 @@ QString MemberManager::getRebates() const{
 QString MemberManager::generateDailyReport(const QDate& date, QSet<Member::MembershipType> includedTypes) const{
     int prefferedCount = 0, basicCount = 0;
     QMap<Item, int> itemList;
-    QVector<QString> customerNames;
+    QVector<Member> customers;
     double totalRevenue = 0;
 
     for(auto member: members){
@@ -263,7 +263,7 @@ QString MemberManager::generateDailyReport(const QDate& date, QSet<Member::Membe
 
         QVector<Purchase> memberPurchase = member.getPurchaseOnDate(date);
         if(!memberPurchase.empty()){
-            customerNames.push_back(member.getName());
+            customers.push_back(member);
             if(member.getType() == Member::PREFERRED){
                 prefferedCount++;
             }else{
@@ -277,7 +277,9 @@ QString MemberManager::generateDailyReport(const QDate& date, QSet<Member::Membe
     }
 
 
-    QString reportString = "";
+    QString reportString = QString("%1 %2\n\n")
+                               .arg("Item", -40)
+                               .arg("Quantity", 10);
 
     for(auto item : itemList.keys()){
         reportString += QString("%1%2\n\n")
@@ -285,12 +287,19 @@ QString MemberManager::generateDailyReport(const QDate& date, QSet<Member::Membe
                     .arg(itemList[item], 10);
     }
 
-    reportString += "Customers that Shopped: \n";
+    reportString += "Customers that Shopped \n\n";
+    reportString += QString("%1 %2 %3\n\n")
+                        .arg("Name", -30)
+                        .arg("ID", -10)
+                        .arg("Membership Type", -20);
 
-    for(auto e: customerNames){
-        reportString += QString("%1\n").arg(e);
+    for(auto member : customers){
+        reportString += QString("%1 %2 %3\n")
+                            .arg(member.getName(), -30)
+                            .arg(member.getId(), -10)
+                            .arg(member.isPreferred() ? "Preferred" : "Basic", -20);
     }
-    reportString += QString("\nPreferred Customers: %1\n").arg(prefferedCount);
+    reportString += QString("\n\nPreferred Customers: %1\n").arg(prefferedCount);
     reportString += QString("Basic Customers: %1\n").arg(basicCount);
 
     return reportString;
@@ -336,15 +345,17 @@ QString MemberManager::generateYearReport(int year, QSet<Member::MembershipType>
         std::cout<<item.name.toStdString()<<" "<<itemList[item]<<std::endl;
     }
 
-    QString reportText = "";
+    QString reportText = QString("%1 %2\n\n")
+                             .arg("Item", -25)
+                             .arg("Quantity", 10);
 
     for(auto it = itemList.constBegin(); it != itemList.constEnd(); ++it){
         reportText += QString("%1 %2 \n\n")
             .arg(it.key().name, -25)
             .arg(it.value(), 10);
     }
-    
-    reportText += QString("Total Revenue: $%1\n\n").arg(totalRevenue);
+    reportText += "----------------------------------------\n";
+    reportText += QString("\nTotal Revenue: $%1\n\n").arg(totalRevenue);
     
     reportText += QString("Best Selling Item: %1 %2 count\n\n")
                       .arg(bestSelling.first.name)
@@ -438,43 +449,57 @@ QString MemberManager::generateYearlyDuesReport(QSet<Member::MembershipType> inc
 
     QString report = "";
 
-    std::cout<<basicMembers[0].getDues()<<std::endl;
-    std::cout<<preferredMembers[0].getDues()<<std::endl;
-
     double basicMemberDues = basicMembers.isEmpty() ? 0 :  basicMembers.size() * basicMembers[0].getDues();;
     double preferredMemberDues = preferredMembers.isEmpty() ? 0 : preferredMembers.size() * preferredMembers[0].getDues();;
 
 
     if(includedTypes.contains(Member::BASIC)){
-        report += "Basic Members: \n";
+
+        report += "Basic Members \n\n";
+
+        report += QString("%1 %2 %3\n\n")
+                      .arg("Name", -30)
+                      .arg("ID", -10)
+                      .arg("Due", -10);
 
         for(auto member : basicMembers){
-            report += QString("%1Dues: $%2\n")
-            .arg(member.getName(), -30)
-                .arg(member.getDues());
+            report += QString("%1 %2 $%3\n")
+                          .arg(member.getName(), -30)
+                          .arg(member.getId(), -10)
+                          .arg(member.getDues(), -10);
         }
 
 
-        report += QString("Total Dues from basic members: $%1\n\n")
+        report += QString("\nTotal Dues from basic members: $%1\n\n")
                       .arg(basicMemberDues);
+        report += "----------------------------------------------------\n\n";
     }
 
     if(includedTypes.contains(Member::PREFERRED)){
-        report += "Preferred members: \n";
+
+        report += "Preferred members \n\n";
+
+        report += QString("%1 %2 %3\n\n")
+                      .arg("Name", -30)
+                      .arg("ID", -10)
+                      .arg("Due", -10);
+
         for(auto member: preferredMembers){
-            report += QString("%1Dues: $%2\n")
-            .arg(member.getName(), -30)
-                .arg(member.getDues());
+            report += QString("%1 %2 $%3\n")
+                          .arg(member.getName(), -30)
+                          .arg(member.getId(), -10)
+                          .arg(member.getDues(), -10);
         }
 
 
-        report += QString("Total Dues from preferred members: $%1\n\n")
+        report += QString("\nTotal Dues from preferred members: $%1\n\n")
                       .arg(preferredMemberDues);
+        report += "----------------------------------------------------\n\n";
     }
 
 
 
-    report += QString("Total Dues from all Members: $%1")
+    report += QString("\nTotal Dues from all Members: $%1")
                   .arg(basicMemberDues + preferredMemberDues);
 
     return report;

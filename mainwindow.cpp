@@ -113,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QFont monospacedFont("Courier New");
     monospacedFont.setStyleHint(QFont::Monospace);
-    monospacedFont.setPixelSize(12);
+    monospacedFont.setPixelSize(11);
     ui->reportWindow->setFont(monospacedFont);
 }
 
@@ -226,7 +226,7 @@ void MainWindow::displayAllMembers()
     QVector<Member> members = memberManager.getAllMembers(includedTypes);
     QString list;
 
-    list += QString("%1%2%3%4%5%6\n\n")
+    list += QString("%1 %2 %3 %4 %5 %6\n\n")
                 .arg("Name", -25)
                 .arg("ID", -10)
                 .arg("Type", -12)
@@ -241,54 +241,22 @@ void MainWindow::displayAllMembers()
     setReportText(list);
 }
 
-// 🔹 Update an existing member
-// void MainWindow::updateMember()
-// {
-//     int id = ui->idInput->text().toInt();
-//     Member *m = memberManager.searchMember(id);
-
-//     if (!m) {
-//         QMessageBox::warning(this, "Error", "Member not found!");
-//         return;
-//     }
-
-//     // Get updated values
-//     QString newName = ui->nameInput->text();
-//     QString newExpiry = ui->expiryInput->text();
-//     bool isPreferred = ui->typeInput->isChecked();
-//     Member::MembershipType newType =
-//             isPreferred ? Member::PREFERRED : Member::BASIC;
-
-//     if (newName.isEmpty() || newExpiry.isEmpty()) {
-//         QMessageBox::warning(this,
-//                              "Error", "Please enter valid member details.");
-//         return;
-//     }
-
-//     // Apply updates
-//     m->setName(newName);
-//     m->setExpiryDate(QDate::fromString(newExpiry, "MM/dd/yyyy"));
-//     m->setType(newType);
-
-//     memberManager.saveToFile("members.txt");
-
-//     QMessageBox::information(this, "Success", "Member updated successfully!");
-// }
 
 // 🔹 Calculate rebates for Preferred Members
 void MainWindow::calculateRebates()
 {
     memberManager.calculateRebates();
-    setReportText(memberManager.getRebates());
+    QString report = QString("%1 %2 %3\n\n")
+                         .arg("Name", -25)
+                         .arg("ID", -10)
+                         .arg("Rebate Amount", -10);
+    report += memberManager.getRebates();
+    setReportText(report);
 }
 
 
 void MainWindow::onUploadFileClicked() {
-    QDir path = QDir(QCoreApplication::applicationDirPath());
-
-    path.cdUp();
-    path.cdUp();
-    path.cdUp();
+    QDir path = GET_PROJECT_DIRECTORY();
 
 
     QString fileName = QFileDialog::getOpenFileName(
@@ -304,7 +272,7 @@ void MainWindow::onUploadFileClicked() {
         return;
     }
 
-    std::cout<<fileName.toStdString()<<std::endl;
+
 
     memberManager.processSalesFile(fileName);
 
@@ -313,10 +281,9 @@ void MainWindow::onUploadFileClicked() {
     QString homeDir = GET_PROJECT_DIRECTORY();
     QString purchaseFilesProcessedDir = homeDir + "/db/purchaseFilesProcessed.txt";
 
-    std::cout<<purchaseFilesProcessedDir.toStdString()<<std::endl;
-    std::cout<<"Here"<<std::endl;
+
     QFile purchaseFilesProcessed(purchaseFilesProcessedDir);
-    std::cout<<"Here"<<std::endl;
+
 
     if (purchaseFilesProcessed.open(QIODevice::Append | QIODevice::Text)) {
         QTextStream out(&purchaseFilesProcessed);
@@ -337,25 +304,46 @@ void MainWindow::generateReport(){
 
     QString report;
 
-    if(day.isEmpty() || month.isEmpty()){
-        if(year.isEmpty() || year.toInt() <= 0){
-            QMessageBox::warning(this,
-                                 "Error", "Please enter valid date or year.");
+    QString reportType = QInputDialog::getItem(
+        this,
+        "Report Type",
+        "Choose Type of Report to Generate",
+        {"Daily", "Yearly"},  // options
+        0,               // default index
+        false            // editable? (false = dropdown only)
+        );
+
+    bool dayOk, monthOk, yearOk;
+    int d = day.toInt(&dayOk);
+    int m = month.toInt(&monthOk);
+    int y = year.toInt(&yearOk);
+
+    if(reportType == "Daily"){
+
+        if (!dayOk || !monthOk || !yearOk) {
+            QMessageBox::warning(this, "Invalid Input", "Please enter valid numbers for day, month, and year.");
             return;
         }
-        report = memberManager.generateYearReport(year.toInt(), includedTypes);
-    }else{
-        int d = day.toInt();
-        int m = month.toInt();
-        int y = year.toInt();
-        QDate date(y, m, d);
 
+        QDate date(y, m, d);
         if(!date.isValid()){
             QMessageBox::warning(this,
-                                 "Error", "Please enter valid date or year.");
+                                 "Error", "Please enter valid date.");
             return;
         }
         report = memberManager.generateDailyReport(date, includedTypes);
+    } else if (reportType == "Yearly") {
+        if (!yearOk) {
+            QMessageBox::warning(this, "Invalid Input", "Please enter valid numbers for year.");
+            return;
+        }
+        if(y <= 0){
+            QMessageBox::warning(this,
+                                 "Error", "Please enter valid year.");
+            return;
+        }
+        std::cout<<"Year Report"<<std::endl;
+        report = memberManager.generateYearReport(y, includedTypes);
     }
     setReportText(report);
 }
@@ -372,13 +360,17 @@ void MainWindow::onItemsSoldReport(){
         return a.first.name < b.first.name;
     });
 
-    QString report = "";
+    QString report = QString("%1 %2 %3\n\n")
+                         .arg("Item Name", -30)
+                         .arg("Quantity", -10)
+                         .arg("Total Revenue", -15);
+    report += "--------------------------------------------------------\n\n";
 
     for(const auto& pair : sortedVector){
         report += QString("%1 %2 %3 \n\n")
-                   .arg(pair.first.name, -20)
-                   .arg(pair.second, 10)
-                   .arg(pair.first.price * pair.second, 10);
+                   .arg(pair.first.name, -30)
+                   .arg(pair.second, -10)
+                   .arg(pair.first.price * pair.second, -15);
     }
     setReportText(report);
 }
@@ -426,15 +418,21 @@ void MainWindow::onAllPurchaseReport(){
 
     QString report = QString("All Purchase Report for: %1\n\n")
                         .arg(m->getName());
+
+    report += QString("%1 %2 %3\n\n")
+                  .arg("Item", -25)
+                  .arg("Quantity", 10)
+                  .arg("Total Price", 15);
     for(auto purchase : allPurchases){
         totalAmount += purchase.getTotalPrice();
 
         report += QString("%1 %2 %3 \n\n")
                    .arg(purchase.getItem().name, -25)
                    .arg(purchase.getQuantity(), 10)
-                   .arg(purchase.getTotalPrice(), 10);
+                   .arg(purchase.getTotalPrice(), 15);
     }
 
+    report += "----------------------------------------------------\n\n";
     report += QString("Total Amount: %1 \n").arg(totalAmount);
 
     setReportText(report);
@@ -458,12 +456,16 @@ void MainWindow::membershipDueReport(){
 void MainWindow::onMembersUpgrade() {
     QVector<Member> upgradeMembers = memberManager.getMembersShouldUpgrade();
 
-    QString report = "";
+    QString report = QString("%1 %2 %3\n\n")
+                         .arg("Name", -25)
+                         .arg("ID", -10)
+                         .arg("Possible Savings", -20);
 
     for(auto member: upgradeMembers){
-        report += QString("%1 Possible Savings: %2\n")
-                      .arg(member.getName())
-                      .arg(member.getSavings());
+        report += QString("%1 %2 %3\n")
+                      .arg(member.getName(), -25)
+                      .arg(member.getId(), -10)
+                      .arg(member.getSavings(), -20);
     }
 
     if(upgradeMembers.isEmpty()){
@@ -476,12 +478,16 @@ void MainWindow::onMembersUpgrade() {
 void MainWindow::onMembersDowngrade() {
     QVector<Member> downgradeMembers = memberManager.getMembersShouldDowngrade();
 
-    QString report = "";
+    QString report = QString("%1 %2 %3\n\n")
+                         .arg("Name", -25)
+                         .arg("ID", -10)
+                         .arg("Possible Savings", -20);
 
     for(auto member: downgradeMembers){
-        report += QString("%1 Possible Savings: %3\n")
-                      .arg(member.getName())
-                      .arg(-1 * member.getSavings());
+        report += QString("%1 %2 %3\n")
+                      .arg(member.getName(), -25)
+                      .arg(member.getId(), -10)
+                      .arg(-1 * member.getSavings(), -20);
     }
 
     if(downgradeMembers.isEmpty()){
@@ -491,15 +497,24 @@ void MainWindow::onMembersDowngrade() {
 }
 
 void MainWindow::onItemsUnitsSold() {
-    QString itemName = ui->itemNameInput->text();
+    QString itemName = QInputDialog::getText(
+        this,                             // parent (usually your QWidget or MainWindow)
+        "Enter Item Name",               // window title
+        "Please enter the item name:"    // label above the input box
+        );
 
-    QString report = "";
+    QString report = QString("%1 %2 %3\n\n")
+                         .arg("Item", -30)
+                         .arg("Units Sold", -15)
+                         .arg("Total Revenue", -15);
 
     for(auto item : Purchase::itemList.keys()){
         if(item.name == itemName){
-            report += QString("Item: %1\n").arg(itemName);
-            report += QString("Units Sold: %1\n").arg(Purchase::itemList[item]);
-            report += QString("Total Revenue: %1\n").arg(Purchase::itemList[item] * item.price);
+
+            report += QString("%1 %2 $%3")
+                          .arg(itemName, -30)
+                          .arg(Purchase::itemList[item], -15)
+                          .arg(Purchase::itemList[item] * item.price, -15);
         }
     }
 
@@ -515,12 +530,18 @@ void MainWindow::onGetExpiringMembers() {
 
     // Ask for month
     int month = QInputDialog::getInt(
-        this, "Enter Month", "Enter expiration month (1–12):", QDate::currentDate().month(), 1, 12, 1, &ok);
+        this, "Enter Month",
+        "Enter expiration month (1–12):",
+        QDate::currentDate().month(), 1, 12, 1, &ok);
+
     if (!ok) return;
 
     // Ask for year
     int year = QInputDialog::getInt(
-        this, "Enter Year", "Enter expiration year (e.g., 2025):", QDate::currentDate().year(), 1900, 2100, 1, &ok);
+        this, "Enter Year",
+        "Enter expiration year (e.g., 2025):",
+        QDate::currentDate().year(), 1900, 2100, 1, &ok);
+
     if (!ok) return;
 
 
@@ -542,6 +563,9 @@ void MainWindow::onGetExpiringMembers() {
                       .arg(member.getDues());
     }
 
+    if(expiringMembers.isEmpty()){
+        report += "None";
+    }
     setReportText(report);
 }
 
